@@ -24,7 +24,7 @@ func findInArray(wasAlready []string, search string) bool {
 	return found
 }
 
-func Extract(url string, linkBuff chan string, errorChannel chan error, syncChannel chan bool, wasAlready []string, wg *sync.WaitGroup)  { // ([]string, error)
+func Extract(url string, linkBuff chan string, errorChannel chan error, syncChannel chan bool, wasAlready *[]string, wg *sync.WaitGroup)  { // ([]string, error)
 	defer func() {<- syncChannel}()
 	defer func() {wg.Done()}()
 	time.Sleep(time.Millisecond * 150)
@@ -52,7 +52,7 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 	
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		wg.Done()
+		// wg.Done()
 		// return
 
 		errorChannel <- fmt.Errorf("getting %s: %s", url, resp.Status)
@@ -94,9 +94,9 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 					// 	fullChannel <- true
 					// }
 					// fmt.Printf("...success!")
-					if !findInArray(wasAlready, linkUrl){
+					if !findInArray(*wasAlready, linkUrl){
 						fmt.Printf("Good -> %s\n", linkUrl)
-						wasAlready = append(wasAlready, url)
+						*wasAlready = append(*wasAlready, url)
 						// for _, link := range wasAlready {
 						// 	fmt.Printf(" => %v", link)
 						// }
@@ -167,21 +167,24 @@ func main() {
 
 
 	wg.Add(1)
-	go Extract("https://blog.burntsushi.net/about/", linkBuff, errorChannel, syncChannel, wasAlready, &wg) // links, err := 
+	go Extract("https://blog.burntsushi.net/about/", linkBuff, errorChannel, syncChannel, &wasAlready, &wg) // links, err := 
 
 	L:
 	for {
 		select{
 		case link := <- linkBuff:
 			wg.Add(1)
-			go Extract(link, linkBuff, errorChannel, syncChannel, wasAlready, &wg)
+			go Extract(link, linkBuff, errorChannel, syncChannel, &wasAlready, &wg)
 		case err := <- errorChannel:			
 			fmt.Printf("LOL! %s", err)
 			// log.Fatal(err)
-			break L
+			// break L
 
 			// os.Exit(1)
+		default:
+			break L
 		}
+
 	}
 
 	// if err == nil {
@@ -205,7 +208,7 @@ func main() {
 //	}
 //	body, err := ioutil.ReadAll(resp.Body)
 
-
+	wg.Wait()
 
 	fmt.Printf("\nDONE! \n\n")
 
