@@ -26,7 +26,7 @@ func findInArray(wasAlready []string, search string) bool {
 
 func Extract(url string, linkBuff chan string, errorChannel chan error, syncChannel chan bool, wasAlready *[]string, wg *sync.WaitGroup)  { // ([]string, error)
 	defer func() {<- syncChannel}()
-	defer func() {wg.Done()}()
+	defer wg.Done()
 	time.Sleep(time.Millisecond * 150)
 	
 
@@ -153,6 +153,7 @@ func main() {
 	errorChannel := make(chan error)
 	syncChannel := make(chan bool, 10)
 	var wasAlready []string
+	timeout := time.NewTimer(5 * time.Second)
 
 	var wg sync.WaitGroup
     
@@ -175,14 +176,17 @@ func main() {
 		case link := <- linkBuff:
 			wg.Add(1)
 			go Extract(link, linkBuff, errorChannel, syncChannel, &wasAlready, &wg)
+			timeout.Reset(5 * time.Second)
 		case err := <- errorChannel:			
 			fmt.Printf("LOL! %s", err)
+		case <- timeout.C:
 			// log.Fatal(err)
-			// break L
+			fmt.Printf("\n=================== TimeOut!\n")
+			break L
 
 			// os.Exit(1)
-		default:
-			break L
+		// default:
+		// 	break L
 		}
 
 	}
@@ -208,7 +212,7 @@ func main() {
 //	}
 //	body, err := ioutil.ReadAll(resp.Body)
 
-	wg.Wait()
+	// wg.Wait()
 
 	fmt.Printf("\nDONE! \n\n")
 
