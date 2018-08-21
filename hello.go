@@ -16,7 +16,6 @@ func findInArray(wasAlready []string, search string) bool {
 	found := false
 	for i := range wasAlready {
 		if wasAlready[i] == search {
-			// fmt.Printf("Found: %s\n", search)
 			found = true
 			break
 		}
@@ -28,20 +27,12 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 	defer func() {<- syncChannel}()
 	defer wg.Done()
 	time.Sleep(time.Millisecond * 150)
-	
 
 	fmt.Printf("\nStarting : %s , length of channel %v, length of links:%v\n", url, len(syncChannel), len(linkBuff))
 	resp, err := http.Get(url)
 
-	// defer resp.Body.Close()
-
-	// defer func() {resp.Body.Close()}()
-
-
 	if err != nil {
 		fmt.Printf("----->%s\n", err)
-		// return
-
 		// panic(err)
 		errorChannel <- err
 		return
@@ -52,8 +43,6 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 	
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		// wg.Done()
-		// return
 
 		errorChannel <- fmt.Errorf("getting %s: %s", url, resp.Status)
 		return
@@ -66,12 +55,9 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 		return
 	}
 
-	// resp.Body.Close()
-	// fmt.Printf("LOL %v", 6)
 	// var links []string
 	visitNode := func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "a" {
-			// fmt.Printf("LOL %v", 7)
 			for _, a := range n.Attr {
 				if a.Key != "href" {
 					continue
@@ -88,24 +74,15 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 				}
 
 				if i := strings.Index(linkUrl, "burntsushi.net"); i > -1 {
-					// errorChannel <- fmt.Errorf("The %s", url, resp.Status)
-					
-					// if len(linkBuff) == cap(linkBuff) {
-					// 	fullChannel <- true
-					// }
-					// fmt.Printf("...success!")
 					if !findInArray(*wasAlready, linkUrl){
 						fmt.Printf("Good -> %s\n", linkUrl)
+						
 						*wasAlready = append(*wasAlready, url)
-						// for _, link := range wasAlready {
-						// 	fmt.Printf(" => %v", link)
-						// }
 
 						linkBuff <- linkUrl
 					}
 				}
 
-				// fmt.Printf("The url %s is not supported", url)
 			}
 		}
 	}
@@ -114,9 +91,6 @@ func Extract(url string, linkBuff chan string, errorChannel chan error, syncChan
 	return
 }
 
-//!-Extract
-
-// Copied from gopl.io/ch5/outline2.
 func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
 	if pre != nil {
 		pre(n)
@@ -129,25 +103,6 @@ func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
 	}
 }
 
-// func treatLink(url string, ) {
-
-// }
-
-// func refiller(syncChannel chan bool) {
-// 	fmt.Printf("Starting sync worker")
-// 	for {
-		
-// 		if len(syncChannel) < cap(syncChannel){
-// 			fmt.Printf("\nlen(syncChannel):%v, is less than cap(syncChannel):%v,",len(syncChannel) ,cap(syncChannel))
-// 			fmt.Printf("Refilling\n")
-// 			syncChannel <- true
-// 		} else{
-// 			// fmt.Printf("Not,refilling\n")
-// 		}
-// 	}
-// }
-
-
 func main() {
 	linkBuff := make(chan string, 100)
 	errorChannel := make(chan error)
@@ -157,15 +112,10 @@ func main() {
 
 	var wg sync.WaitGroup
     
-
 	for i:=0;i<10;i++{
 		fmt.Printf("\nInitial filling channel: %v", i)
 		syncChannel<-true
 	}
-
-	// go refiller(syncChannel)
-	// fmt.Printf("\ncontinuint")
-
 
 	wg.Add(1)
 	go Extract("https://blog.burntsushi.net/about/", linkBuff, errorChannel, syncChannel, &wasAlready, &wg) // links, err := 
@@ -180,38 +130,11 @@ func main() {
 		case err := <- errorChannel:			
 			fmt.Printf("LOL! %s", err)
 		case <- timeout.C:
-			// log.Fatal(err)
 			fmt.Printf("\n=================== TimeOut!\n")
 			break L
-
-			// os.Exit(1)
-		// default:
-		// 	break L
 		}
 
 	}
-
-	// if err == nil {
-	// 	fmt.Printf("Printing:\n")
-	// 	for _, link := range links {
-	// 		fmt.Printf("%s\n", link)
-
-	// 	}
-	// } else {
-	// 	log.Fatal(err)
-	// }
-
-//	if err != nil {
-//		fmt.Printf("PANIC!")
-//	}
-
-//	defer resp.Body.Close()
-
-//	for link := range getLinks(resp.Body) {
-//		fmt.Printf(link)
-//	}
-//	body, err := ioutil.ReadAll(resp.Body)
-
 	// wg.Wait()
 
 	fmt.Printf("\nDONE! \n\n")
